@@ -85,7 +85,6 @@ class VMSControllerUI(ctk.CTk):
         threading.Thread(target=self.monitor_service, daemon=True).start()
 
     # --- TRAY LOGIC ---
-    # (Same as before, simplified for brevity)
     def minimize_to_tray(self):
         self.withdraw()
 
@@ -120,7 +119,7 @@ class VMSControllerUI(ctk.CTk):
                       font=ctk.CTkFont(size=20, weight="bold")).pack(pady=(15, 20))
         self.entry_key = self.create_input_row(card, "Partner Key")
         self.entry_secret = self.create_input_row(card, "Partner Secret", True)
-        self.save_btn = ctk.CTkButton(card, text="Save", fg_color="#3498DB", 
+        self.save_btn = ctk.CTkButton(card, text="Sign in", fg_color="#3498DB", 
                                        width=140, height=32, corner_radius=6, command=self.save_all_data)
         self.save_btn.pack(pady=20)
 
@@ -167,8 +166,7 @@ class VMSControllerUI(ctk.CTk):
 
         # --- CERTIFICATE MANAGER (Hidden by default) ---
         self.cert_frame = ctk.CTkFrame(card, fg_color="#F9FAFB", corner_radius=10, border_width=1, border_color="#E5E7EB")
-        # Don't pack immediately, show only if HTTPS
-
+        
         ctk.CTkLabel(self.cert_frame, text="Secure Certificate Setup", font=("Roboto", 12, "bold"), text_color="#374151").pack(pady=(10,5))
         
         # Cert Row
@@ -214,14 +212,14 @@ class VMSControllerUI(ctk.CTk):
     def toggle_protocol_ui(self, val):
         if val == "HTTPS":
             self.cert_frame.pack(fill="x", padx=40, pady=10, after=self.p_frame)
-            self.validate_certs(silent=True) # Check existing files
+            self.validate_certs(silent=True) # Check existing files silently
             self.ip_link.configure(text="https://127.0.0.1:8000")
         else:
             self.cert_frame.pack_forget()
             self.ip_link.configure(text="http://127.0.0.1:8000")
         
         # Save config immediately
-        self.save_all_data()
+        self.save_all_data(silent=True) # Don't popup when just switching toggles
 
     def upload_cert(self):
         filename = filedialog.askopenfilename(title="Select Certificate", filetypes=[("PEM Files", "*.pem"), ("All Files", "*.*")])
@@ -255,6 +253,9 @@ class VMSControllerUI(ctk.CTk):
 
         if has_cert and has_key:
             self.btn_validate.configure(text="Configuration Valid", fg_color="#10B981")
+            # --- POPUP FOR SUCCESSFUL VALIDATION ---
+            if not silent:
+                 messagebox.showinfo("Success", "Certificate Configuration is Valid!\nYou can now start the HTTPS service.")
             return True
         else:
             self.btn_validate.configure(text="Validate Certificates", fg_color="#D97706")
@@ -294,7 +295,7 @@ class VMSControllerUI(ctk.CTk):
             self.start_btn.pack_forget()
             self.stop_btn.pack()
             self.protocol_switch.configure(state="disabled")
-            self.cert_frame.pack_forget() # Hide settings while running to prevent editing
+            self.cert_frame.pack_forget() # Hide settings while running
             if hasattr(self, 'tray_icon') and os.path.exists(CHECK_ICO):
                 self.tray_icon.icon = Image.open(CHECK_ICO)
         else:
@@ -334,7 +335,7 @@ class VMSControllerUI(ctk.CTk):
                     self.toggle_protocol_ui(proto.upper())
             except: pass
 
-    def save_all_data(self):
+    def save_all_data(self, silent=False):
         # Save Keys
         with open(KEYS_FILE, "w") as f: 
             json.dump({"partner_key": self.entry_key.get(), "partner_secret": self.entry_secret.get()}, f, indent=4)
@@ -342,6 +343,10 @@ class VMSControllerUI(ctk.CTk):
         # Save Protocol
         with open(CONFIG_FILE, 'w') as f:
             json.dump({"protocol": self.protocol_var.get().lower()}, f)
+        
+        # --- POPUP FOR SAVE SUCCESS ---
+        if not silent:
+            messagebox.showinfo("Success", "Configuration and Credentials saved successfully!")
 
     def monitor_service(self):
         while not self.stop_event.is_set():
