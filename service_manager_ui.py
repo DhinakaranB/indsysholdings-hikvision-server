@@ -6,11 +6,9 @@ import subprocess
 import threading
 import time
 import webbrowser
-from tkinter import filedialog, messagebox
 from PIL import Image
 import pystray
 from pystray import MenuItem as item
-import shutil
 
 # --- Configuration ---
 SERVICE_NAME = "VMSController"
@@ -39,27 +37,25 @@ class VMSControllerUI(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        # Window Geometry - Increased height for certificate UI
+        # Compact Window Geometry
         self.title("VMS Service Controller")
-        self.geometry("750x600") 
+        self.geometry("750x480") 
         self.resizable(False, False)
+        
+        # Outer Window Background
         self.configure(fg_color="#F0F2F5") 
-
-        # Set Window Icon
-        if os.path.exists(ICON_PATH):
-            self.iconbitmap(ICON_PATH)
 
         # Handle Window Close (Minimize to Tray)
         self.protocol("WM_DELETE_WINDOW", self.minimize_to_tray)
         self.last_known_status = None
-        self.current_ui_state = None 
+        self.current_ui_state = None # Prevents flickering
         
         # Inner Rounded Container
         self.main_container = ctk.CTkFrame(self, fg_color="#D1D5DB", corner_radius=20)
         self.main_container.pack(padx=25, pady=(15, 5), fill="both", expand=True)
 
-        # Tabs
-        self.tabview = ctk.CTkTabview(self.main_container, width=680, height=480, 
+        # Tabview Styling
+        self.tabview = ctk.CTkTabview(self.main_container, width=680, height=360, 
                                       fg_color="transparent",
                                       segmented_button_selected_color="#3498DB",
                                       segmented_button_unselected_color="#9CA3AF")
@@ -74,28 +70,38 @@ class VMSControllerUI(ctk.CTk):
         self.setup_version_log_tab()
         self.load_all_data()
 
-        # Footer
+        # Copyright Footer
         self.footer = ctk.CTkLabel(self, text="© 2025 Copyright by Indsys Holdings", 
                                    text_color="#6B7280", font=ctk.CTkFont(size=12))
         self.footer.pack(side="bottom", pady=8)
 
-        # Tray and Monitoring
+        # Initialize Tray and Monitoring
         self.setup_tray_icon()
         self.stop_event = threading.Event()
         threading.Thread(target=self.monitor_service, daemon=True).start()
 
     # --- TRAY LOGIC ---
+
+    def start_http_from_tray(self, icon, item):
+        if hasattr(self, 'protocol_var'): self.protocol_var.set("HTTP")
+        self.save_protocol_only("HTTP")
+        self.start_service()
+
+    def start_https_from_tray(self, icon, item):
+        if hasattr(self, 'protocol_var'): self.protocol_var.set("HTTPS")
+        self.save_protocol_only("HTTPS")
+        self.start_service()
+
     def minimize_to_tray(self):
         self.withdraw()
 
-    def show_window(self, icon=None, item=None):
-        self.after(0, self.deiconify)
-
-    def quit_app(self, icon=None, item=None):
-        if hasattr(self, 'tray_icon'): self.tray_icon.stop()
-        self.stop_event.set()
-        self.destroy()
-        sys.exit()
+    def get_tray_status_text(self, item):
+        # Uses Bold Text Symbols instead of emojis for professional look
+        status = self.last_known_status if self.last_known_status else "SERVICE_STOPPED"
+        proto = self.protocol_var.get() if hasattr(self, 'protocol_var') else "HTTP"
+        if "SERVICE_RUNNING" in status:
+            return f"✔  {proto} Service: Running" 
+        return f"✘  {proto} Service: Stopped"
 
     def setup_tray_icon(self):
         if os.path.exists(ICON_PATH):
@@ -104,13 +110,28 @@ class VMSControllerUI(ctk.CTk):
             taskbar_img = Image.new('RGB', (64, 64), color=(0, 0, 0))
 
         menu = pystray.Menu(
+            item(lambda i: self.get_tray_status_text(i), None, enabled=False),
+            pystray.Menu.SEPARATOR,
+            item('▶ Start HTTP Service', self.start_http_from_tray, enabled=lambda i: not self.is_service_running()),
+            item('▶ Start HTTPS Service', self.start_https_from_tray, enabled=lambda i: not self.is_service_running()),
+            item('⏹ Stop Service', self.on_tray_stop, enabled=lambda i: self.is_service_running()),
+            pystray.Menu.SEPARATOR,
             item('Open Manager', self.show_window, default=True),
             item('Quit', self.quit_app)
         )
         self.tray_icon = pystray.Icon("VMS", taskbar_img, "VMS Controller", menu)
         threading.Thread(target=self.tray_icon.run, daemon=True).start()
 
-    # --- UI COMPONENTS ---
+    def show_window(self):
+        self.after(0, self.deiconify)
+
+    def quit_app(self):
+        if hasattr(self, 'tray_icon'): self.tray_icon.stop()
+        self.stop_event.set()
+        self.destroy()
+        sys.exit()
+
+    # --- UI SETUP ---
 
     def setup_integration_keys_tab(self):
         card = ctk.CTkFrame(self.tab_keys, fg_color="#FFFFFF", corner_radius=15)
@@ -135,7 +156,7 @@ class VMSControllerUI(ctk.CTk):
         card = ctk.CTkFrame(self.tab_control, fg_color="#FFFFFF", corner_radius=15)
         card.pack(expand=True, fill="both", padx=20, pady=15)
 
-        # Header Info
+        # Header
         header = ctk.CTkFrame(card, fg_color="#DBEAFE", height=40, corner_radius=10)
         header.pack(fill="x", padx=15, pady=(15, 5))
         header.columnconfigure(0, weight=2); header.columnconfigure(1, weight=2); header.columnconfigure(2, weight=1)
@@ -143,7 +164,7 @@ class VMSControllerUI(ctk.CTk):
         ctk.CTkLabel(header, text="IP / PORT", font=ctk.CTkFont(size=12, weight="bold"), text_color="#1E40AF").grid(row=0, column=1, pady=8)
         ctk.CTkLabel(header, text="STATUS", font=ctk.CTkFont(size=12, weight="bold"), text_color="#1E40AF").grid(row=0, column=2, pady=8, sticky="e", padx=25)
         
-        # Status Row
+        # Info Row
         row = ctk.CTkFrame(card, fg_color="#F3F4F6", corner_radius=10)
         row.pack(fill="x", padx=15, pady=5)
         row.columnconfigure(0, weight=2); row.columnconfigure(1, weight=2); row.columnconfigure(2, weight=1)
@@ -154,41 +175,20 @@ class VMSControllerUI(ctk.CTk):
         self.status_indicator = ctk.CTkLabel(row, text="STOPPED...", text_color="#DC2626", font=ctk.CTkFont(size=13, weight="bold"))
         self.status_indicator.grid(row=0, column=2, pady=20, sticky="e", padx=25)
 
-        # Protocol Switch
+        # --- ALIGNMENT FIX: Centered Toggle Switch ---
         self.p_frame = ctk.CTkFrame(card, fg_color="transparent")
-        self.p_frame.pack(pady=(15, 5)) 
+        # Increasing pady aligns it better between the row above and button below
+        self.p_frame.pack(pady=(20, 10)) 
         
         self.protocol_var = ctk.StringVar(value="HTTP")
         self.protocol_switch = ctk.CTkSegmentedButton(self.p_frame, values=["HTTP", "HTTPS"], 
                                                       variable=self.protocol_var, 
-                                                      command=self.toggle_protocol_ui)
+                                                      command=self.save_protocol_only)
         self.protocol_switch.pack()
-
-        # --- CERTIFICATE MANAGER (Hidden by default) ---
-        self.cert_frame = ctk.CTkFrame(card, fg_color="#F9FAFB", corner_radius=10, border_width=1, border_color="#E5E7EB")
-        
-        ctk.CTkLabel(self.cert_frame, text="Secure Certificate Setup", font=("Roboto", 12, "bold"), text_color="#374151").pack(pady=(10,5))
-        
-        # Cert Row
-        c_row = ctk.CTkFrame(self.cert_frame, fg_color="transparent")
-        c_row.pack(fill="x", padx=20, pady=5)
-        self.lbl_cert = ctk.CTkLabel(c_row, text="Pending...", text_color="orange", font=("Arial", 11))
-        self.lbl_cert.pack(side="right", padx=5)
-        ctk.CTkButton(c_row, text="Upload cert.pem", width=120, height=28, fg_color="#4B5563", command=self.upload_cert).pack(side="left")
-        
-        # Key Row
-        k_row = ctk.CTkFrame(self.cert_frame, fg_color="transparent")
-        k_row.pack(fill="x", padx=20, pady=5)
-        self.lbl_key = ctk.CTkLabel(k_row, text="Pending...", text_color="orange", font=("Arial", 11))
-        self.lbl_key.pack(side="right", padx=5)
-        ctk.CTkButton(k_row, text="Upload key.pem", width=120, height=28, fg_color="#4B5563", command=self.upload_key).pack(side="left")
-
-        self.btn_validate = ctk.CTkButton(self.cert_frame, text="Validate Certificates", fg_color="#D97706", height=28, command=self.validate_certs)
-        self.btn_validate.pack(pady=(5, 10))
 
         # Button Container
         self.btn_container = ctk.CTkFrame(card, fg_color="transparent")
-        self.btn_container.pack(pady=20)
+        self.btn_container.pack(pady=(5, 20))
         
         self.start_btn = ctk.CTkButton(self.btn_container, text="START", fg_color="#10B981", 
                                        hover_color="#059669", width=120, height=32, corner_radius=20,
@@ -198,157 +198,34 @@ class VMSControllerUI(ctk.CTk):
                                       hover_color="#DC2626", width=120, height=32, corner_radius=20,
                                       command=self.stop_service)
         
+    def open_endpoint(self, event):
+        url = self.ip_link.cget("text")
+        webbrowser.open(f"{url}/docs")
+
+    def is_service_running(self):
+        return self.last_known_status and "SERVICE_RUNNING" in self.last_known_status
+
+    def on_tray_stop(self, icon, item):
+        self.stop_service()
+        
     def setup_version_log_tab(self):
         card = ctk.CTkFrame(self.tab_log, fg_color="#FFFFFF", corner_radius=15)
         card.pack(expand=True, fill="both", padx=20, pady=15)
         ctk.CTkLabel(card, text="VMS Controller Pro", font=ctk.CTkFont(size=20, weight="bold")).pack(pady=10)
         log_box = ctk.CTkTextbox(card, width=580, height=140, fg_color="#F9FAFB", border_width=1)
-        log_box.pack(pady=5, fill="both", expand=True)
-        log_box.insert("0.0", "• [UPDATE] Added HTTPS Support\n• [FEATURE] Certificate Upload & Validation")
+        log_box.pack(pady=5)
+        log_box.insert("0.0", "• [RELEASE] Final Client Demo Build\n• [UI] Fixed Alignment & Flickering\n• [PERF] Background Threading for Start/Stop")
         log_box.configure(state="disabled")
 
-    # --- LOGIC ---
+    # --- LOGIC & THREADING ---
 
-    def toggle_protocol_ui(self, val):
-        if val == "HTTPS":
-            self.cert_frame.pack(fill="x", padx=40, pady=10, after=self.p_frame)
-            self.validate_certs(silent=True) # Check existing files silently
-            self.ip_link.configure(text="https://127.0.0.1:8000")
-        else:
-            self.cert_frame.pack_forget()
-            self.ip_link.configure(text="http://127.0.0.1:8000")
-        
-        # Save config immediately
-        self.save_all_data(silent=True) # Don't popup when just switching toggles
-
-    def upload_cert(self):
-        filename = filedialog.askopenfilename(title="Select Certificate", filetypes=[("PEM Files", "*.pem"), ("All Files", "*.*")])
-        if filename:
-            try:
-                shutil.copy(filename, "cert.pem")
-                self.lbl_cert.configure(text="Uploaded ✔", text_color="green")
-                messagebox.showinfo("Success", "Certificate uploaded successfully!")
-            except Exception as e:
-                messagebox.showerror("Error", f"Failed to upload: {e}")
-
-    def upload_key(self):
-        filename = filedialog.askopenfilename(title="Select Private Key", filetypes=[("PEM Files", "*.pem"), ("All Files", "*.*")])
-        if filename:
-            try:
-                shutil.copy(filename, "key.pem")
-                self.lbl_key.configure(text="Uploaded ✔", text_color="green")
-                messagebox.showinfo("Success", "Key uploaded successfully!")
-            except Exception as e:
-                messagebox.showerror("Error", f"Failed to upload: {e}")
-
-    def validate_certs(self, silent=False):
-        has_cert = os.path.exists("cert.pem")
-        has_key = os.path.exists("key.pem")
-
-        if has_cert: self.lbl_cert.configure(text="Found ✔", text_color="green")
-        else: self.lbl_cert.configure(text="Missing ✘", text_color="red")
-        
-        if has_key: self.lbl_key.configure(text="Found ✔", text_color="green")
-        else: self.lbl_key.configure(text="Missing ✘", text_color="red")
-
-        if has_cert and has_key:
-            self.btn_validate.configure(text="Configuration Valid", fg_color="#10B981")
-            # --- POPUP FOR SUCCESSFUL VALIDATION ---
-            if not silent:
-                 messagebox.showinfo("Success", "Certificate Configuration is Valid!\nYou can now start the HTTPS service.")
-            return True
-        else:
-            self.btn_validate.configure(text="Validate Certificates", fg_color="#D97706")
-            if not silent: messagebox.showwarning("Incomplete", "Please upload both cert.pem and key.pem for HTTPS.")
-            return False
-
-    def start_service(self):
-        # Validation before start
-        if self.protocol_var.get() == "HTTPS":
-            if not self.validate_certs(silent=True):
-                 messagebox.showerror("Cannot Start", "HTTPS mode requires valid certificates.")
-                 return
-
-        self.last_known_status = "SERVICE_RUNNING"
-        self.update_ui_state("SERVICE_RUNNING")
-        self._run_command_threaded([NSSM_EXE, "start", SERVICE_NAME])
-
-    def stop_service(self):
-        self.last_known_status = "SERVICE_STOPPED"
-        self.update_ui_state("SERVICE_STOPPED")
-        self._run_command_threaded([NSSM_EXE, "stop", SERVICE_NAME])
-
-    def _run_command_threaded(self, command):
-        def task():
-            subprocess.run(command, creationflags=0x08000000)
-        threading.Thread(target=task, daemon=True).start()
-
-    def update_ui_state(self, status):
-        is_running = "SERVICE_RUNNING" in status
-        new_state = "RUNNING" if is_running else "STOPPED"
-        
-        if self.current_ui_state == new_state: return 
-        self.current_ui_state = new_state
-
-        if is_running:
-            self.status_indicator.configure(text="RUNNING...", text_color="#059669")
-            self.start_btn.pack_forget()
-            self.stop_btn.pack()
-            self.protocol_switch.configure(state="disabled")
-            self.cert_frame.pack_forget() # Hide settings while running
-            if hasattr(self, 'tray_icon') and os.path.exists(CHECK_ICO):
-                self.tray_icon.icon = Image.open(CHECK_ICO)
-        else:
-            self.status_indicator.configure(text="STOPPED...", text_color="#DC2626")
-            self.stop_btn.pack_forget()
-            self.start_btn.pack()
-            self.protocol_switch.configure(state="normal")
-            
-            # Show cert frame if HTTPS is selected
-            if self.protocol_var.get() == "HTTPS":
-                 self.cert_frame.pack(fill="x", padx=40, pady=10, after=self.p_frame)
-
-            if hasattr(self, 'tray_icon') and os.path.exists(NO_ICO):
-                self.tray_icon.icon = Image.open(NO_ICO)
-
-    def open_endpoint(self, event):
-        url = self.ip_link.cget("text")
-        webbrowser.open(f"{url}/docs")
-
-    def load_all_data(self):
-        # Load Keys
-        if os.path.exists(KEYS_FILE):
-            try:
-                with open(KEYS_FILE, 'r') as f:
-                    data = json.load(f)
-                    self.entry_key.insert(0, data.get("partner_key", ""))
-                    self.entry_secret.insert(0, data.get("partner_secret", ""))
-            except: pass
-        
-        # Load Config
-        if os.path.exists(CONFIG_FILE):
-            try:
-                with open(CONFIG_FILE, 'r') as f:
-                    data = json.load(f)
-                    proto = data.get("protocol", "http")
-                    self.protocol_var.set(proto.upper())
-                    self.toggle_protocol_ui(proto.upper())
-            except: pass
-
-    def save_all_data(self, silent=False):
-        # Save Keys
-        with open(KEYS_FILE, "w") as f: 
-            json.dump({"partner_key": self.entry_key.get(), "partner_secret": self.entry_secret.get()}, f, indent=4)
-        
-        # Save Protocol
+    def save_protocol_only(self, val):
         with open(CONFIG_FILE, 'w') as f:
-            json.dump({"protocol": self.protocol_var.get().lower()}, f)
-        
-        # --- POPUP FOR SAVE SUCCESS ---
-        if not silent:
-            messagebox.showinfo("Success", "Configuration and Credentials saved successfully!")
+            json.dump({"protocol": val.lower()}, f)
+        self.ip_link.configure(text=f"{val.lower()}://127.0.0.1:8000")
 
     def monitor_service(self):
+        """Background Loop."""
         while not self.stop_event.is_set():
             try:
                 result = subprocess.run([NSSM_EXE, "status", SERVICE_NAME], capture_output=True, text=True, creationflags=0x08000000)
@@ -358,6 +235,69 @@ class VMSControllerUI(ctk.CTk):
                     self.after(0, self.update_ui_state, status)
             except: pass
             time.sleep(0.5)
+
+    def update_ui_state(self, status):
+        """Updates UI only if state actually changed (Fixes Flickering)."""
+        is_running = "SERVICE_RUNNING" in status
+        
+        # Determine desired state
+        new_state = "RUNNING" if is_running else "STOPPED"
+        
+        # FIX: Only redraw if state is different from current UI
+        if self.current_ui_state == new_state:
+            return 
+        
+        self.current_ui_state = new_state
+
+        if is_running:
+            self.status_indicator.configure(text="RUNNING...", text_color="#059669")
+            self.start_btn.pack_forget()
+            self.stop_btn.pack()
+            self.protocol_switch.configure(state="disabled")
+            if hasattr(self, 'tray_icon') and os.path.exists(CHECK_ICO):
+                self.tray_icon.icon = Image.open(CHECK_ICO)
+        else:
+            self.status_indicator.configure(text="STOPPED...", text_color="#DC2626")
+            self.stop_btn.pack_forget()
+            self.start_btn.pack()
+            self.protocol_switch.configure(state="normal")
+            if hasattr(self, 'tray_icon') and os.path.exists(NO_ICO):
+                self.tray_icon.icon = Image.open(NO_ICO)
+
+    def load_all_data(self):
+        if os.path.exists(KEYS_FILE):
+            with open(KEYS_FILE, 'r') as f:
+                data = json.load(f); self.entry_key.insert(0, data.get("partner_key", "")); self.entry_secret.insert(0, data.get("partner_secret", ""))
+        if os.path.exists(CONFIG_FILE):
+            with open(CONFIG_FILE, 'r') as f:
+                proto = json.load(f).get("protocol", "http"); self.protocol_var.set(proto.upper())
+                self.ip_link.configure(text=f"{proto.lower()}://127.0.0.1:8000")
+
+    def save_all_data(self):
+        with open(KEYS_FILE, "w") as f: json.dump({"partner_key": self.entry_key.get(), "partner_secret": self.entry_secret.get()}, f, indent=4)
+        self.save_protocol_only(self.protocol_var.get())
+
+    # --- FIX: THREADED START/STOP TO PREVENT HANGING ---
+
+    def _run_command_threaded(self, command):
+        """Runs subprocess in background so UI doesn't freeze."""
+        def task():
+            subprocess.run(command, creationflags=0x08000000)
+        threading.Thread(target=task, daemon=True).start()
+
+    def start_service(self):
+        # 1. Instant Visual Feedback
+        self.last_known_status = "SERVICE_RUNNING"
+        self.update_ui_state("SERVICE_RUNNING")
+        # 2. Run actual command in background
+        self._run_command_threaded([NSSM_EXE, "start", SERVICE_NAME])
+
+    def stop_service(self):
+        # 1. Instant Visual Feedback
+        self.last_known_status = "SERVICE_STOPPED"
+        self.update_ui_state("SERVICE_STOPPED")
+        # 2. Run actual command in background
+        self._run_command_threaded([NSSM_EXE, "stop", SERVICE_NAME])
 
 if __name__ == "__main__":
     app = VMSControllerUI()

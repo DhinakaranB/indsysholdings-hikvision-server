@@ -62,12 +62,14 @@ if __name__ == '__main__':
             
             if not os.path.exists(cert_file) or not os.path.exists(key_file):
                 logging.error(f"CRITICAL: HTTPS selected but keys not found at: {cert_file}")
-                # Fallback to HTTP so service doesn't die completely
-                uvicorn.run(app, host="0.0.0.0", port=8000)
+                # Fallback to HTTP but DISABLE log_config to prevent crash
+                uvicorn.run(app, host="0.0.0.0", port=8000, log_config=None)
             else:
-                uvicorn.run(app, host="0.0.0.0", port=8000, ssl_certfile=cert_file, ssl_keyfile=key_file)
+                # HTTPS Mode with log_config disabled
+                uvicorn.run(app, host="0.0.0.0", port=8000, ssl_certfile=cert_file, ssl_keyfile=key_file, log_config=None)
         else:
-            uvicorn.run(app, host="0.0.0.0", port=8000)
+            # HTTP Mode with log_config disabled
+            uvicorn.run(app, host="0.0.0.0", port=8000, log_config=None)
             
     except Exception as e:
         logging.error(f"Server crashed: {e}")

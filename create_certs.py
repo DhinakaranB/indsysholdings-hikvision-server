@@ -6,21 +6,21 @@ from cryptography.hazmat.primitives import serialization
 import datetime
 
 def generate_self_signed_cert():
-    # 1. Generate Private Key
+    # Generate private key
     key = rsa.generate_private_key(
         public_exponent=65537,
         key_size=2048,
     )
 
-    # 2. Generate Certificate
+    # Generate a self-signed certificate
     subject = issuer = x509.Name([
         x509.NameAttribute(NameOID.COUNTRY_NAME, u"US"),
-        x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, u"State"),
-        x509.NameAttribute(NameOID.LOCALITY_NAME, u"City"),
+        x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, u"California"),
+        x509.NameAttribute(NameOID.LOCALITY_NAME, u"San Francisco"),
         x509.NameAttribute(NameOID.ORGANIZATION_NAME, u"My Company"),
         x509.NameAttribute(NameOID.COMMON_NAME, u"localhost"),
     ])
-
+    
     cert = x509.CertificateBuilder().subject_name(
         subject
     ).issuer_name(
@@ -39,18 +39,19 @@ def generate_self_signed_cert():
         critical=False,
     ).sign(key, hashes.SHA256())
 
-    # 3. Save Files
+    # Write key to file
     with open("key.pem", "wb") as f:
         f.write(key.private_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.TraditionalOpenSSL,
             encryption_algorithm=serialization.NoEncryption(),
         ))
-    
+
+    # Write cert to file
     with open("cert.pem", "wb") as f:
         f.write(cert.public_bytes(serialization.Encoding.PEM))
 
-    print("SUCCESS: Created 'cert.pem' and 'key.pem'")
+    print("Successfully created cert.pem and key.pem")
 
 if __name__ == "__main__":
     generate_self_signed_cert()
