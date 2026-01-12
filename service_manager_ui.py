@@ -161,76 +161,14 @@ class VMSControllerUI(ctk.CTk):
         entry.pack(side="left")
         return entry
 
-    # def setup_service_control_tab(self):
-    #     card = ctk.CTkFrame(self.tab_control, fg_color="#FFFFFF", corner_radius=15)
-    #     card.pack(expand=True, fill="both", padx=20, pady=15)
-
-    #     # --- Header ---
-    #     header = ctk.CTkFrame(card, fg_color="#DBEAFE", height=40, corner_radius=10)
-    #     header.pack(fill="x", padx=15, pady=(15, 5))
-    #     header.columnconfigure(0, weight=2); header.columnconfigure(1, weight=2); header.columnconfigure(2, weight=1)
-    #     ctk.CTkLabel(header, text="SERVICE NAME", font=ctk.CTkFont(size=12, weight="bold"), text_color="#1E40AF").grid(row=0, column=0, pady=8, sticky="w", padx=25)
-    #     ctk.CTkLabel(header, text="IP / PORT", font=ctk.CTkFont(size=12, weight="bold"), text_color="#1E40AF").grid(row=0, column=1, pady=8)
-    #     ctk.CTkLabel(header, text="STATUS", font=ctk.CTkFont(size=12, weight="bold"), text_color="#1E40AF").grid(row=0, column=2, pady=8, sticky="e", padx=25)
-        
-    #     # --- Info Row ---
-    #     row = ctk.CTkFrame(card, fg_color="#F3F4F6", corner_radius=10)
-    #     row.pack(fill="x", padx=15, pady=5)
-    #     row.columnconfigure(0, weight=2); row.columnconfigure(1, weight=2); row.columnconfigure(2, weight=1)
-    #     ctk.CTkLabel(row, text="VMS API Service", text_color="#111827", font=ctk.CTkFont(size=13)).grid(row=0, column=0, pady=20, sticky="w", padx=25)
-    #     self.ip_link = ctk.CTkLabel(row, text="http://127.0.0.1:8000", text_color="#3498DB", font=ctk.CTkFont(size=14, underline=True), cursor="hand2")
-    #     self.ip_link.grid(row=0, column=1, pady=20)
-    #     self.ip_link.bind("<Button-1>", self.open_endpoint)
-    #     self.status_indicator = ctk.CTkLabel(row, text="STOPPED...", text_color="#DC2626", font=ctk.CTkFont(size=13, weight="bold"))
-    #     self.status_indicator.grid(row=0, column=2, pady=20, sticky="e", padx=25)
-
-    #     # --- HTTPS File Upload Area (Hidden by default) ---
-    #     self.ssl_frame = ctk.CTkFrame(card, fg_color="transparent")
-        
-    #     # Cert Row
-    #     self.cert_path = None
-    #     self.btn_cert = ctk.CTkButton(self.ssl_frame, text="Upload Cert (.pem)", width=140, fg_color="#6B7280", command=self.select_cert)
-    #     self.btn_cert.grid(row=0, column=0, padx=10, pady=5)
-    #     self.lbl_cert = ctk.CTkLabel(self.ssl_frame, text="No file selected", text_color="gray", font=("Arial", 11))
-    #     self.lbl_cert.grid(row=0, column=1, padx=10, sticky="w")
-
-    #     # Key Row
-    #     self.key_path = None
-    #     self.btn_key = ctk.CTkButton(self.ssl_frame, text="Upload Key (.pem)", width=140, fg_color="#6B7280", command=self.select_key)
-    #     self.btn_key.grid(row=1, column=0, padx=10, pady=5)
-    #     self.lbl_key = ctk.CTkLabel(self.ssl_frame, text="No file selected", text_color="gray", font=("Arial", 11))
-    #     self.lbl_key.grid(row=1, column=1, padx=10, sticky="w")
-
-
-    #     # --- Protocol Switch ---
-    #     self.p_frame = ctk.CTkFrame(card, fg_color="transparent")
-    #     self.p_frame.pack(pady=(15, 5)) 
-        
-    #     self.protocol_var = ctk.StringVar(value="HTTP")
-    #     self.protocol_switch = ctk.CTkSegmentedButton(self.p_frame, values=["HTTP", "HTTPS"], 
-    #                                                   variable=self.protocol_var, 
-    #                                                   command=self.toggle_https_ui) # Changed command
-    #     self.protocol_switch.pack()
-
-    #     # --- Start/Stop Buttons ---
-    #     self.btn_container = ctk.CTkFrame(card, fg_color="transparent")
-    #     self.btn_container.pack(pady=(10, 20))
-        
-    #     self.start_btn = ctk.CTkButton(self.btn_container, text="START", fg_color="#10B981", 
-    #                                    hover_color="#059669", width=120, height=32, corner_radius=20,
-    #                                    command=self.validate_and_start) # Changed command
-        
-    #     self.stop_btn = ctk.CTkButton(self.btn_container, text="STOP", fg_color="#EF4444", 
-    #                                   hover_color="#DC2626", width=120, height=32, corner_radius=20,
-    #                                   command=self.stop_service)
-
     def setup_service_control_tab(self):
+        # 1. Main Card: Compact padding
         card = ctk.CTkFrame(self.tab_control, fg_color="#FFFFFF", corner_radius=15)
-        card.pack(expand=True, fill="both", padx=20, pady=15)
+        card.pack(expand=True, fill="both", padx=20, pady=5)
 
         # --- Header ---
         header = ctk.CTkFrame(card, fg_color="#DBEAFE", height=40, corner_radius=10)
-        header.pack(fill="x", padx=15, pady=(15, 5))
+        header.pack(fill="x", padx=15, pady=(5, 5)) # Reduced top gap
         header.columnconfigure(0, weight=2); header.columnconfigure(1, weight=2); header.columnconfigure(2, weight=1)
         ctk.CTkLabel(header, text="SERVICE NAME", font=ctk.CTkFont(size=12, weight="bold"), text_color="#1E40AF").grid(row=0, column=0, pady=8, sticky="w", padx=25)
         ctk.CTkLabel(header, text="IP / PORT", font=ctk.CTkFont(size=12, weight="bold"), text_color="#1E40AF").grid(row=0, column=1, pady=8)
@@ -240,48 +178,49 @@ class VMSControllerUI(ctk.CTk):
         row = ctk.CTkFrame(card, fg_color="#F3F4F6", corner_radius=10)
         row.pack(fill="x", padx=15, pady=5)
         row.columnconfigure(0, weight=2); row.columnconfigure(1, weight=2); row.columnconfigure(2, weight=1)
-        ctk.CTkLabel(row, text="VMS API Service", text_color="#111827", font=ctk.CTkFont(size=13)).grid(row=0, column=0, pady=20, sticky="w", padx=25)
+        ctk.CTkLabel(row, text="VMS API Service", text_color="#111827", font=ctk.CTkFont(size=13)).grid(row=0, column=0, pady=10, sticky="w", padx=25)
         self.ip_link = ctk.CTkLabel(row, text="http://127.0.0.1:8000", text_color="#3498DB", font=ctk.CTkFont(size=14, underline=True), cursor="hand2")
-        self.ip_link.grid(row=0, column=1, pady=20)
+        self.ip_link.grid(row=0, column=1, pady=10)
         self.ip_link.bind("<Button-1>", self.open_endpoint)
         self.status_indicator = ctk.CTkLabel(row, text="STOPPED...", text_color="#DC2626", font=ctk.CTkFont(size=13, weight="bold"))
-        self.status_indicator.grid(row=0, column=2, pady=20, sticky="e", padx=25)
+        self.status_indicator.grid(row=0, column=2, pady=10, sticky="e", padx=25)
 
         # --- HTTPS File Upload Area (Hidden by default) ---
         self.ssl_frame = ctk.CTkFrame(card, fg_color="transparent")
         
-        # 1. Certificate Row
+        # 1. INSTRUCTION LABEL (Compact)
+        self.lbl_instruction = ctk.CTkLabel(self.ssl_frame, text="Please upload certificate from your system:", 
+                                            text_color="#374151", font=("Arial", 12, "bold"))
+        self.lbl_instruction.grid(row=0, column=0, columnspan=3, pady=(0, 2), sticky="w", padx=10) # Changed pady to 2
+
+        # 2. Certificate Row
         self.cert_path = None
-        # Renamed to "Certificate File"
         self.btn_cert = ctk.CTkButton(self.ssl_frame, text="Certificate File", width=140, fg_color="#6B7280", command=self.select_cert)
-        self.btn_cert.grid(row=0, column=0, padx=10, pady=5)
-        
+        self.btn_cert.grid(row=1, column=0, padx=10, pady=2) # Changed pady from 5 to 2
         self.lbl_cert = ctk.CTkLabel(self.ssl_frame, text="No file selected", text_color="gray", font=("Arial", 11))
-        self.lbl_cert.grid(row=0, column=1, padx=10, sticky="w")
-        
-        # CANCEL BUTTON (Hidden initially)
+        self.lbl_cert.grid(row=1, column=1, padx=10, sticky="w")
         self.btn_clear_cert = ctk.CTkButton(self.ssl_frame, text="X", width=30, fg_color="#EF4444", hover_color="#DC2626", command=self.clear_cert)
-        self.btn_clear_cert.grid(row=0, column=2, padx=5)
-        self.btn_clear_cert.grid_remove() # Hide immediately
+        self.btn_clear_cert.grid(row=1, column=2, padx=5)
+        self.btn_clear_cert.grid_remove() 
 
-        # 2. Key Row
+        # 3. Key Row
         self.key_path = None
-        # Renamed to "Key File"
         self.btn_key = ctk.CTkButton(self.ssl_frame, text="Key File", width=140, fg_color="#6B7280", command=self.select_key)
-        self.btn_key.grid(row=1, column=0, padx=10, pady=5)
-        
+        self.btn_key.grid(row=2, column=0, padx=10, pady=2) # Changed pady from 5 to 2
         self.lbl_key = ctk.CTkLabel(self.ssl_frame, text="No file selected", text_color="gray", font=("Arial", 11))
-        self.lbl_key.grid(row=1, column=1, padx=10, sticky="w")
-
-        # CANCEL BUTTON (Hidden initially)
+        self.lbl_key.grid(row=2, column=1, padx=10, sticky="w")
         self.btn_clear_key = ctk.CTkButton(self.ssl_frame, text="X", width=30, fg_color="#EF4444", hover_color="#DC2626", command=self.clear_key)
-        self.btn_clear_key.grid(row=1, column=2, padx=5)
-        self.btn_clear_key.grid_remove() # Hide immediately
-
+        self.btn_clear_key.grid(row=2, column=2, padx=5)
+        self.btn_clear_key.grid_remove() 
+        
+        # 4. VALIDATION ICON (Compact)
+        self.lbl_validation = ctk.CTkLabel(self.ssl_frame, text="✔ Certificate Validated", text_color="#10B981", font=("Arial", 14, "bold"))
+        self.lbl_validation.grid(row=3, column=0, columnspan=3, pady=2) # Changed pady from 10 to 2
+        self.lbl_validation.grid_remove()
 
         # --- Protocol Switch ---
         self.p_frame = ctk.CTkFrame(card, fg_color="transparent")
-        self.p_frame.pack(pady=(15, 5)) 
+        self.p_frame.pack(pady=5) # Minimal padding
         
         self.protocol_var = ctk.StringVar(value="HTTP")
         self.protocol_switch = ctk.CTkSegmentedButton(self.p_frame, values=["HTTP", "HTTPS"], 
@@ -291,7 +230,7 @@ class VMSControllerUI(ctk.CTk):
 
         # --- Start/Stop Buttons ---
         self.btn_container = ctk.CTkFrame(card, fg_color="transparent")
-        self.btn_container.pack(pady=(10, 20))
+        self.btn_container.pack(pady=(5, 10)) # Reduced top to 5, bottom to 10
         
         self.start_btn = ctk.CTkButton(self.btn_container, text="START", fg_color="#10B981", 
                                        hover_color="#059669", width=120, height=32, corner_radius=20,
@@ -302,12 +241,14 @@ class VMSControllerUI(ctk.CTk):
                                       command=self.stop_service)
         
     def toggle_https_ui(self, val):
-        """Shows/Hides upload buttons based on selection."""
         self.save_protocol_only(val)
         if val == "HTTPS":
-            self.ssl_frame.pack(after=self.p_frame, pady=10) # Show upload area
+            self.ssl_frame.pack(after=self.p_frame, pady=10)
         else:
-            self.ssl_frame.pack_forget() # Hide upload area
+            self.ssl_frame.pack_forget()
+        
+        # Reset validation status when toggling
+        self.lbl_validation.grid_remove()
         
     def select_cert(self):
         filename = filedialog.askopenfilename(filetypes=[("Certificate", "*.pem *.crt")])
@@ -318,11 +259,10 @@ class VMSControllerUI(ctk.CTk):
             self.btn_clear_cert.grid()
     
     def clear_cert(self):
-        """Resets the cert selection."""
         self.cert_path = None
         self.lbl_cert.configure(text="No file selected", text_color="gray")
-        # Hide the X button
         self.btn_clear_cert.grid_remove()
+        self.lbl_validation.grid_remove() # Hide tick
     
     def select_key(self):
         filename = filedialog.askopenfilename(filetypes=[("Private Key", "*.pem *.key")])
@@ -333,24 +273,25 @@ class VMSControllerUI(ctk.CTk):
             self.btn_clear_key.grid()
     
     def clear_key(self):
-        """Resets the key selection."""
         self.key_path = None
         self.lbl_key.configure(text="No file selected", text_color="gray")
-        # Hide the X button
         self.btn_clear_key.grid_remove()
+        self.lbl_validation.grid_remove() # Hide tick
 
     def validate_and_start(self):
         """Validates Certs if HTTPS is selected, then starts."""
         mode = self.protocol_var.get()
 
         if mode == "HTTPS":
+            # Hide tick initially in case they are re-trying
+            self.lbl_validation.grid_remove()
+            
             base_dir = os.getcwd() 
             dest_cert = os.path.join(base_dir, "cert.pem")
             dest_key = os.path.join(base_dir, "key.pem")
 
-            # 2. Check if files are selected
+            # 1. Check if files are selected
             if not self.cert_path or not self.key_path:
-                # If user didn't pick new files, check if the default ones exist
                 if os.path.exists(dest_cert) and os.path.exists(dest_key):
                      self.cert_path = dest_cert
                      self.key_path = dest_key
@@ -358,33 +299,31 @@ class VMSControllerUI(ctk.CTk):
                     messagebox.showerror("Error", "Please upload both Certificate and Key files.")
                     return
 
-            # 3. Validate using SSL Library
+            # 2. Validate using SSL Library
             try:
                 context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
                 context.load_cert_chain(certfile=self.cert_path, keyfile=self.key_path)
                 
-                # Show success popup
-                messagebox.showinfo("Success", "Files Verified Valid!\nStarting Service...")
+                # --- SHOW SUCCESS TICK ICON HERE ---
+                self.lbl_validation.grid() 
+                self.update_idletasks() # Force the UI to refresh immediately
+                time.sleep(0.8) # Wait 0.8 seconds so user sees the tick!
+                # -----------------------------------
                 
-                # 4. COPY FILES (BUT ONLY IF THEY ARE DIFFERENT PATHS)
-                # --- FIX FOR "SAME FILE" ERROR ---
+                # 3. Copy files (Fixing SameFileError)
                 if os.path.abspath(self.cert_path) != os.path.abspath(dest_cert):
                     shutil.copy(self.cert_path, dest_cert)
-                
                 if os.path.abspath(self.key_path) != os.path.abspath(dest_key):
                     shutil.copy(self.key_path, dest_key)
-                # ---------------------------------
 
             except ssl.SSLError as e:
                 messagebox.showerror("Validation Failed", f"Invalid Certificate/Key pair:\n{e}")
                 return
             except Exception as e:
-                # Just in case, ignore "same file" errors if they slip through
                 if "same file" not in str(e).lower():
                     messagebox.showerror("Error", f"Could not load files:\n{e}")
                     return
 
-        # 5. Call the original start logic
         self.start_service()
         
     def open_endpoint(self, event):
@@ -425,6 +364,31 @@ class VMSControllerUI(ctk.CTk):
             except: pass
             time.sleep(0.5)
 
+    # def update_ui_state(self, status):
+    #     """Updates UI only if state actually changed (Fixes Flickering)."""
+    #     is_running = "SERVICE_RUNNING" in status
+        
+    #     # Determine desired state
+    #     new_state = "RUNNING" if is_running else "STOPPED"
+        
+    #     # FIX: Only redraw if state is different from current UI
+    #     if self.current_ui_state == new_state:
+    #         return 
+        
+    #     self.current_ui_state = new_state
+
+    #     if is_running:
+    #         self.status_indicator.configure(text="RUNNING...", text_color="#059669")
+    #         self.start_btn.pack_forget()
+    #         self.stop_btn.pack()
+    #         self.protocol_switch.configure(state="disabled")
+
+    #     else:
+    #         self.status_indicator.configure(text="STOPPED...", text_color="#DC2626")
+    #         self.stop_btn.pack_forget()
+    #         self.start_btn.pack()
+    #         self.protocol_switch.configure(state="normal")
+
     def update_ui_state(self, status):
         """Updates UI only if state actually changed (Fixes Flickering)."""
         is_running = "SERVICE_RUNNING" in status
@@ -442,13 +406,34 @@ class VMSControllerUI(ctk.CTk):
             self.status_indicator.configure(text="RUNNING...", text_color="#059669")
             self.start_btn.pack_forget()
             self.stop_btn.pack()
-            self.protocol_switch.configure(state="disabled")
+            self.protocol_switch.configure(state="disabled") # Lock protocol switch
+            
+            # --- NEW: HIDE 'X' BUTTONS WHILE RUNNING ---
+            self.btn_clear_cert.grid_remove()
+            self.btn_clear_key.grid_remove()
+            # -------------------------------------------
+
+            if hasattr(self, 'tray_icon') and os.path.exists(CHECK_ICO):
+                try: self.tray_icon.icon = Image.open(CHECK_ICO)
+                except: pass
 
         else:
             self.status_indicator.configure(text="STOPPED...", text_color="#DC2626")
             self.stop_btn.pack_forget()
             self.start_btn.pack()
             self.protocol_switch.configure(state="normal")
+            
+            # --- NEW: RESTORE 'X' BUTTONS IF FILES EXIST ---
+            # We only show the X if a file is actually currently selected
+            if self.cert_path:
+                self.btn_clear_cert.grid()
+            if self.key_path:
+                self.btn_clear_key.grid()
+            # -----------------------------------------------
+
+            if hasattr(self, 'tray_icon') and os.path.exists(NO_ICO):
+                try: self.tray_icon.icon = Image.open(NO_ICO)
+                except: pass
 
     def load_all_data(self):
         if os.path.exists(KEYS_FILE):
