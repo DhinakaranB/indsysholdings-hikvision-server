@@ -8,6 +8,7 @@ import time
 import webbrowser
 from PIL import Image
 import pystray
+import ctypes
 from pystray import MenuItem as item
 
 # --- Configuration ---
@@ -41,6 +42,9 @@ class VMSControllerUI(ctk.CTk):
         self.title("VMS Service Controller")
         self.geometry("750x480") 
         self.resizable(False, False)
+
+
+        self.iconbitmap(ICON_PATH)
         
         # Outer Window Background
         self.configure(fg_color="#F0F2F5") 
@@ -107,6 +111,7 @@ class VMSControllerUI(ctk.CTk):
         if os.path.exists(ICON_PATH):
             taskbar_img = Image.open(ICON_PATH)
         else:
+            print(f"Warning: Could not find icon at {ICON_PATH}")
             taskbar_img = Image.new('RGB', (64, 64), color=(0, 0, 0))
 
         menu = pystray.Menu(
@@ -254,15 +259,15 @@ class VMSControllerUI(ctk.CTk):
             self.start_btn.pack_forget()
             self.stop_btn.pack()
             self.protocol_switch.configure(state="disabled")
-            if hasattr(self, 'tray_icon') and os.path.exists(CHECK_ICO):
-                self.tray_icon.icon = Image.open(CHECK_ICO)
+            # if hasattr(self, 'tray_icon') and os.path.exists(CHECK_ICO):
+            #     self.tray_icon.icon = Image.open(CHECK_ICO)
         else:
             self.status_indicator.configure(text="STOPPED...", text_color="#DC2626")
             self.stop_btn.pack_forget()
             self.start_btn.pack()
             self.protocol_switch.configure(state="normal")
-            if hasattr(self, 'tray_icon') and os.path.exists(NO_ICO):
-                self.tray_icon.icon = Image.open(NO_ICO)
+            # if hasattr(self, 'tray_icon') and os.path.exists(NO_ICO):
+            #     self.tray_icon.icon = Image.open(NO_ICO)
 
     def load_all_data(self):
         if os.path.exists(KEYS_FILE):
@@ -300,5 +305,12 @@ class VMSControllerUI(ctk.CTk):
         self._run_command_threaded([NSSM_EXE, "stop", SERVICE_NAME])
 
 if __name__ == "__main__":
+
+    myappid = 'indsys.vms.controller.1.0' 
+    try:
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+    except Exception:
+        pass
+    
     app = VMSControllerUI()
     app.mainloop()

@@ -5,7 +5,7 @@ a = Analysis(
     ['service_manager_ui.py'],
     pathex=[],
     binaries=[],
-    datas=[('VMS_App_Icon.ico', '.'), ('check.ico', '.'), ('no.ico', '.')],
+    datas=[('VMS_App_Icon.ico', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -35,5 +35,4 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['VMS_App_Icon.ico'],
 )
