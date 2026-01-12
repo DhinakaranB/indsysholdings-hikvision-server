@@ -477,9 +477,9 @@ class VMSControllerUI(ctk.CTk):
             self.btn_clear_key.grid_remove()
             # -------------------------------------------
 
-            if hasattr(self, 'tray_icon') and os.path.exists(CHECK_ICO):
-                try: self.tray_icon.icon = Image.open(CHECK_ICO)
-                except: pass
+            # if hasattr(self, 'tray_icon') and os.path.exists(CHECK_ICO):
+            #     try: self.tray_icon.icon = Image.open(CHECK_ICO)
+            #     except: pass
 
         else:
             self.status_indicator.configure(text="STOPPED...", text_color="#DC2626")
@@ -495,9 +495,9 @@ class VMSControllerUI(ctk.CTk):
                 self.btn_clear_key.grid()
             # -----------------------------------------------
 
-            if hasattr(self, 'tray_icon') and os.path.exists(NO_ICO):
-                try: self.tray_icon.icon = Image.open(NO_ICO)
-                except: pass
+            # if hasattr(self, 'tray_icon') and os.path.exists(NO_ICO):
+            #     try: self.tray_icon.icon = Image.open(NO_ICO)
+            #     except: pass
 
     def load_all_data(self):
         if os.path.exists(KEYS_FILE):
@@ -541,6 +541,14 @@ if __name__ == "__main__":
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
     except Exception:
         pass
+
+    kernel32 = ctypes.windll.kernel32
+    mutex = kernel32.CreateMutexW(None, False, "Global\\VMS_Controller_Unique_Instance_Key_12345")
+
+    if kernel32.GetLastError() == 183:
+        # Optional: Show a popup telling the user it's already running
+        ctypes.windll.user32.MessageBoxW(0, "The application is already running in the System Tray.", "VMS Controller", 0x40 | 0x1)
+        sys.exit(0) # Quit this new instance immediately
     
     app = VMSControllerUI()
     app.mainloop()
