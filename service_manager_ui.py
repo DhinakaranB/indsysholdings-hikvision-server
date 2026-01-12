@@ -283,36 +283,46 @@ class VMSControllerUI(ctk.CTk):
         mode = self.protocol_var.get()
 
         if mode == "HTTPS":
-            # Hide tick initially in case they are re-trying
+            # Hide tick initially
             self.lbl_validation.grid_remove()
             
             base_dir = os.getcwd() 
             dest_cert = os.path.join(base_dir, "cert.pem")
             dest_key = os.path.join(base_dir, "key.pem")
 
-            # 1. Check if files are selected
-            if not self.cert_path or not self.key_path:
-                if os.path.exists(dest_cert) and os.path.exists(dest_key):
-                     self.cert_path = dest_cert
-                     self.key_path = dest_key
+            # 1. CHECK & AUTO-FILL LABELS
+            # If user hasn't selected a file, check if we have one saved from before.
+            if not self.cert_path:
+                if os.path.exists(dest_cert):
+                    self.cert_path = dest_cert
+                    self.lbl_cert.configure(text="cert.pem (Saved)", text_color="black") # Update UI
                 else:
-                    messagebox.showerror("Error", "Please upload both Certificate and Key files.")
-                    return
+                    messagebox.showerror("Missing Certificate", "No certificate found.\nPlease upload a Certificate File.")
+                    return # STOP HERE
 
-            # 2. Validate using SSL Library
+            if not self.key_path:
+                if os.path.exists(dest_key):
+                    self.key_path = dest_key
+                    self.lbl_key.configure(text="key.pem (Saved)", text_color="black") # Update UI
+                else:
+                    messagebox.showerror("Missing Key", "No key found.\nPlease upload a Key File.")
+                    return # STOP HERE
+
+            # 2. VALIDATE using SSL Library
             try:
                 context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
                 context.load_cert_chain(certfile=self.cert_path, keyfile=self.key_path)
                 
-                # --- SHOW SUCCESS TICK ICON HERE ---
+                # Show Success Tick
                 self.lbl_validation.grid() 
-                self.update_idletasks() # Force the UI to refresh immediately
-                time.sleep(0.8) # Wait 0.8 seconds so user sees the tick!
-                # -----------------------------------
+                self.update_idletasks()
+                time.sleep(0.5) 
                 
-                # 3. Copy files (Fixing SameFileError)
+                # 3. COPY FILES (Prevent SameFileError)
+                # Only copy if the selected file is NOT the one already in the folder
                 if os.path.abspath(self.cert_path) != os.path.abspath(dest_cert):
                     shutil.copy(self.cert_path, dest_cert)
+                
                 if os.path.abspath(self.key_path) != os.path.abspath(dest_key):
                     shutil.copy(self.key_path, dest_key)
 
@@ -324,6 +334,7 @@ class VMSControllerUI(ctk.CTk):
                     messagebox.showerror("Error", f"Could not load files:\n{e}")
                     return
 
+        # 4. If all checks pass, START the service
         self.start_service()
         
     def open_endpoint(self, event):
@@ -337,13 +348,91 @@ class VMSControllerUI(ctk.CTk):
         self.stop_service()
         
     def setup_version_log_tab(self):
-        card = ctk.CTkFrame(self.tab_log, fg_color="#FFFFFF", corner_radius=15)
-        card.pack(expand=True, fill="both", padx=20, pady=15)
-        ctk.CTkLabel(card, text="VMS Controller Pro", font=ctk.CTkFont(size=20, weight="bold")).pack(pady=10)
-        log_box = ctk.CTkTextbox(card, width=580, height=140, fg_color="#F9FAFB", border_width=1)
-        log_box.pack(pady=5)
-        log_box.insert("0.0", "• [RELEASE] Final Client Demo Build\n• [UI] Fixed Alignment & Flickering\n• [PERF] Background Threading for Start/Stop")
-        log_box.configure(state="disabled")
+        # 1. Main Container (Clean White Card)
+        main_card = ctk.CTkFrame(self.tab_log, fg_color="#FFFFFF", corner_radius=15)
+        main_card.pack(expand=True, fill="both", padx=20, pady=15)
+
+        # 2. Header Title Area
+        title_frame = ctk.CTkFrame(main_card, fg_color="transparent")
+        title_frame.pack(fill="x", padx=25, pady=(20, 10))
+        
+        ctk.CTkLabel(title_frame, text="Software Update", 
+                     font=ctk.CTkFont(size=22, weight="bold"), text_color="#111827").pack(side="left")
+        
+        # Dynamic "Last checked" text for realism
+        ctk.CTkLabel(title_frame, text="Last checked: Just now", 
+                     font=ctk.CTkFont(size=12), text_color="#6B7280").pack(side="right", pady=5)
+
+        # 3. Scrollable List for Updates
+        # This allows you to have unlimited history without running out of space
+        self.log_scroll = ctk.CTkScrollableFrame(main_card, fg_color="transparent", width=600)
+        self.log_scroll.pack(expand=True, fill="both", padx=10, pady=(0, 20))
+
+        # --- ADD YOUR LOGS HERE ---
+        
+        # Latest Update (Marked as NEW)
+        self.add_log_entry("Version 2.1.0", "Jan 12, 2026", [
+            "Integrated HTTPS Secure Boot Logic",
+            "Added Certificate Validation UI",
+            "Fixed Taskbar Icon Rendering issue",
+            "Performance improvements for VMS API calls"
+        ], is_new=True)
+
+        # Older Updates
+        self.add_log_entry("Version 2.0.5", "Jan 09, 2026", [
+            "Initial release of Service Controller",
+            "Added background thread monitoring",
+            "System Tray minimization support"
+        ])
+        
+        self.add_log_entry("Version 1.0.0", "Dec 20, 2025", [
+            "Legacy protocol support (HTTP)",
+            "Basic Start/Stop functionality",
+            "Core VMS Integration drivers"
+        ])
+
+    def add_log_entry(self, version, date, changes, is_new=False):
+        """Helper to create a Samsung-style update card."""
+        
+        # The Card Background (Light Gray)
+        entry_card = ctk.CTkFrame(self.log_scroll, fg_color="#F3F4F6", corner_radius=12)
+        entry_card.pack(fill="x", padx=10, pady=8)
+
+        # --- Row 1: Header (Version | Badge | Date) ---
+        header = ctk.CTkFrame(entry_card, fg_color="transparent")
+        header.pack(fill="x", padx=20, pady=(15, 5))
+        
+        # Version Number
+        ver_lbl = ctk.CTkLabel(header, text=version, font=ctk.CTkFont(size=16, weight="bold"), text_color="#1F2937")
+        ver_lbl.pack(side="left")
+
+        # "NEW" Badge (Blue Pill Style)
+        if is_new:
+            new_badge = ctk.CTkLabel(header, text="  NEW  ", fg_color="#2563EB", text_color="white",
+                                     font=ctk.CTkFont(size=10, weight="bold"), corner_radius=10, height=20)
+            new_badge.pack(side="left", padx=10)
+
+        # Date (Right aligned)
+        date_lbl = ctk.CTkLabel(header, text=date, font=ctk.CTkFont(size=12), text_color="#6B7280")
+        date_lbl.pack(side="right")
+
+        # --- Separator Line ---
+        ctk.CTkFrame(entry_card, fg_color="#E5E7EB", height=1).pack(fill="x", padx=20, pady=8)
+
+        # --- Row 2: Bullet Points ---
+        content_frame = ctk.CTkFrame(entry_card, fg_color="transparent")
+        content_frame.pack(fill="x", padx=20, pady=(5, 15))
+
+        for item in changes:
+            row = ctk.CTkFrame(content_frame, fg_color="transparent")
+            row.pack(fill="x", pady=2)
+            
+            # Blue Bullet Point
+            ctk.CTkLabel(row, text="•", text_color="#2563EB", font=ctk.CTkFont(size=18, weight="bold"), width=15).pack(side="left", anchor="n")
+            
+            # Change Text
+            ctk.CTkLabel(row, text=item, text_color="#374151", font=ctk.CTkFont(size=13), 
+                         anchor="w", justify="left", wraplength=500).pack(side="left", padx=5)
 
     # --- LOGIC & THREADING ---
 
@@ -363,31 +452,6 @@ class VMSControllerUI(ctk.CTk):
                     self.after(0, self.update_ui_state, status)
             except: pass
             time.sleep(0.5)
-
-    # def update_ui_state(self, status):
-    #     """Updates UI only if state actually changed (Fixes Flickering)."""
-    #     is_running = "SERVICE_RUNNING" in status
-        
-    #     # Determine desired state
-    #     new_state = "RUNNING" if is_running else "STOPPED"
-        
-    #     # FIX: Only redraw if state is different from current UI
-    #     if self.current_ui_state == new_state:
-    #         return 
-        
-    #     self.current_ui_state = new_state
-
-    #     if is_running:
-    #         self.status_indicator.configure(text="RUNNING...", text_color="#059669")
-    #         self.start_btn.pack_forget()
-    #         self.stop_btn.pack()
-    #         self.protocol_switch.configure(state="disabled")
-
-    #     else:
-    #         self.status_indicator.configure(text="STOPPED...", text_color="#DC2626")
-    #         self.stop_btn.pack_forget()
-    #         self.start_btn.pack()
-    #         self.protocol_switch.configure(state="normal")
 
     def update_ui_state(self, status):
         """Updates UI only if state actually changed (Fixes Flickering)."""
