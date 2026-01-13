@@ -149,8 +149,8 @@ class VMSControllerUI(ctk.CTk):
                       font=ctk.CTkFont(size=20, weight="bold")).pack(pady=(15, 20))
         self.entry_key = self.create_input_row(card, "Partner Key")
         self.entry_secret = self.create_input_row(card, "Partner Secret", True)
-        self.save_btn = ctk.CTkButton(card, text="Sign in", fg_color="#3498DB", 
-                                       width=140, height=32, corner_radius=6, command=self.save_all_data)
+        self.save_btn = ctk.CTkButton(card, text="Save", fg_color="#1EA1DB", 
+                                       width=85, height=30, corner_radius=6, command=self.save_all_data)
         self.save_btn.pack(pady=20)
 
     def create_input_row(self, parent, label_text, is_password=False):
@@ -511,6 +511,9 @@ class VMSControllerUI(ctk.CTk):
     def save_all_data(self):
         with open(KEYS_FILE, "w") as f: json.dump({"partner_key": self.entry_key.get(), "partner_secret": self.entry_secret.get()}, f, indent=4)
         self.save_protocol_only(self.protocol_var.get())
+
+        # 3. SHOW SUCCESS POPUP
+        messagebox.showinfo("Success", "Integration Credentials Saved Successfully!")
 
     # --- FIX: THREADED START/STOP TO PREVENT HANGING ---
 
